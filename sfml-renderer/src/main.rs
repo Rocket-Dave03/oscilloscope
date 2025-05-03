@@ -1,3 +1,4 @@
+use egui::TextBuffer;
 use sfml::{
 	graphics::{
 		CircleShape, Color, Rect, RenderStates, RenderTarget, RenderWindow, Transformable, View,
@@ -28,6 +29,11 @@ fn main() {
 		.enumerate()
 		.for_each(|(i, c)| c.set_position((50.0 * (i + 1) as f32, 50.0)));
 
+	let mut sf_ui = egui_sfml::SfEgui::new(&w);
+
+	let mut message = String::new();
+	let mut messages = Vec::new();
+
 	'event_loop: loop {
 		// Procces all pending events
 		while let Some(event) = w.poll_event() {
@@ -40,6 +46,7 @@ fn main() {
 				}
 				e => println!("Event: {e:?}"),
 			}
+			sf_ui.add_event(&event);
 		}
 
 		w.clear(Color::rgb(1, 1, 1));
@@ -47,6 +54,30 @@ fn main() {
 		circles
 			.iter()
 			.for_each(|c| w.draw_circle_shape(c, &RenderStates::DEFAULT));
+
+		let di = sf_ui
+			.run(&mut w, |_rw, ctx| {
+				let win = egui::SidePanel::left("left_panel").resizable(false);
+				win.show(ctx, |ui| {
+					ui.horizontal(|ui| {
+						ui.label("Message");
+						let te_re = ui.text_edit_singleline(&mut message);
+						if ui.button("Send").clicked()
+							|| ui.input(|inp| inp.key_pressed(egui::Key::Enter))
+						{
+							messages.push(message.take());
+							te_re.request_focus();
+						}
+					});
+					for msg in &messages {
+						ui.separator();
+						ui.label(msg);
+					}
+				});
+			})
+			.unwrap();
+
+		sf_ui.draw(di, &mut w, None);
 
 		w.display();
 	}
