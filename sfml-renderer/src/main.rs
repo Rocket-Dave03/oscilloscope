@@ -20,8 +20,12 @@ fn main() {
 	)
 	.expect("Failed to create window");
 
-	let mut circle = CircleShape::new(8.0, 8);
-	circle.set_position((50.0, 50.0));
+	let mut circles = vec![CircleShape::new(8.0, 16); 64];
+	circles
+		.iter_mut()
+		.enumerate()
+		.for_each(|(i, c)| c.set_position((50.0 * (i + 1) as f32, 50.0)));
+
 	'event_loop: loop {
 		// Procces all pending events
 		while let Some(event) = w.poll_event() {
@@ -32,7 +36,11 @@ fn main() {
 		}
 
 		w.clear(Color::rgb(1, 1, 1));
-		w.draw_circle_shape(&circle, &RenderStates::DEFAULT);
+
+		circles
+			.iter()
+			.for_each(|c| w.draw_circle_shape(c, &RenderStates::DEFAULT));
+
 		w.display();
 	}
 }
