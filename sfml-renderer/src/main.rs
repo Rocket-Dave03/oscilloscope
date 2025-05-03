@@ -1,5 +1,7 @@
 use sfml::{
-	graphics::{CircleShape, Color, RenderStates, RenderTarget, RenderWindow, Transformable},
+	graphics::{
+		CircleShape, Color, Rect, RenderStates, RenderTarget, RenderWindow, Transformable, View,
+	},
 	window::{ContextSettings, Event, Style, VideoMode},
 };
 
@@ -31,6 +33,11 @@ fn main() {
 		while let Some(event) = w.poll_event() {
 			match event {
 				Event::Closed => break 'event_loop,
+				Event::Resized { width, height } => {
+					let v =
+						View::from_rect(Rect::new(0.0, 0.0, width as f32, height as f32)).unwrap();
+					w.set_view(&v)
+				}
 				e => println!("Event: {e:?}"),
 			}
 		}
