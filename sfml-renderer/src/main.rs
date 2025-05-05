@@ -6,6 +6,37 @@ use sfml::{
 	window::{ContextSettings, Event, Style, VideoMode},
 };
 
+fn draw_ui(
+	sf_ui: &mut egui_sfml::SfEgui,
+	w: &mut RenderWindow,
+	message: &mut String,
+	messages: &mut Vec<String>,
+) {
+	let di = sf_ui
+		.run(w, |_rw, ctx| {
+			let win = egui::SidePanel::left("left_panel").resizable(false);
+			win.show(ctx, |ui| {
+				ui.horizontal(|ui| {
+					ui.label("Message");
+					let te_re = ui.text_edit_singleline(message);
+					if ui.button("Send").clicked()
+						|| ui.input(|inp| inp.key_pressed(egui::Key::Enter))
+					{
+						messages.push(message.take());
+						te_re.request_focus();
+					}
+				});
+				for msg in messages.iter() {
+					ui.separator();
+					ui.label(msg);
+				}
+			});
+		})
+		.unwrap();
+
+	sf_ui.draw(di, w, None);
+}
+
 fn main() {
 	let mut w = RenderWindow::new(
 		VideoMode::desktop_mode(),
@@ -32,7 +63,7 @@ fn main() {
 	let mut sf_ui = egui_sfml::SfEgui::new(&w);
 
 	let mut message = String::new();
-	let mut messages = Vec::new();
+	let mut messages: Vec<String> = Vec::new();
 
 	'event_loop: loop {
 		// Procces all pending events
@@ -55,29 +86,7 @@ fn main() {
 			.iter()
 			.for_each(|c| w.draw_circle_shape(c, &RenderStates::DEFAULT));
 
-		let di = sf_ui
-			.run(&mut w, |_rw, ctx| {
-				let win = egui::SidePanel::left("left_panel").resizable(false);
-				win.show(ctx, |ui| {
-					ui.horizontal(|ui| {
-						ui.label("Message");
-						let te_re = ui.text_edit_singleline(&mut message);
-						if ui.button("Send").clicked()
-							|| ui.input(|inp| inp.key_pressed(egui::Key::Enter))
-						{
-							messages.push(message.take());
-							te_re.request_focus();
-						}
-					});
-					for msg in &messages {
-						ui.separator();
-						ui.label(msg);
-					}
-				});
-			})
-			.unwrap();
-
-		sf_ui.draw(di, &mut w, None);
+		draw_ui(&mut sf_ui, &mut w, &mut message, &mut messages);
 
 		w.display();
 	}
