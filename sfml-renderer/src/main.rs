@@ -69,7 +69,10 @@ fn main() {
 		// Procces all pending events
 		while let Some(event) = w.poll_event() {
 			match event {
-				Event::Closed => break 'event_loop,
+				Event::Closed => {
+					w.close();
+					break 'event_loop;
+				}
 				Event::Resized { width, height } => {
 					let v =
 						View::from_rect(Rect::new(0.0, 0.0, width as f32, height as f32)).unwrap();
