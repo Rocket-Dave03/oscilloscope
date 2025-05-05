@@ -1,7 +1,10 @@
 use egui::TextBuffer;
+use rust_fontconfig::{FcFontCache, FcPattern, PatternMatch};
 use sfml::{
+	cpp::FBox,
 	graphics::{
-		CircleShape, Color, Rect, RenderStates, RenderTarget, RenderWindow, Transformable, View,
+		CircleShape, Color, Font, Rect, RenderStates, RenderTarget, RenderWindow, Text,
+		Transformable, View,
 	},
 	window::{ContextSettings, Event, Style, VideoMode},
 };
@@ -37,6 +40,42 @@ fn draw_ui(
 	sf_ui.draw(di, w, None);
 }
 
+fn load_font() -> Option<FBox<Font>> {
+	let cache = FcFontCache::build();
+	let fonts = cache.query_all(
+		&FcPattern {
+			monospace: PatternMatch::True,
+			..Default::default()
+		},
+		&mut Vec::new(),
+	);
+
+	println!("Found {} monospace fonts:", fonts.len());
+	let font_name = cache.get_metadata_by_id(&fonts.first()?.id)?.name.clone();
+	println!("{:?}", font_name);
+
+	let font_src = cache.get_font_by_id(&fonts.first()?.id)?;
+
+	match font_src {
+		rust_fontconfig::FontSource::Disk(path) => {
+			println!(
+				"Loading font from: {} @ index: {}",
+				path.path, path.font_index
+			);
+			match sfml::graphics::Font::from_file(&path.path) {
+				Ok(f) => Some(f),
+				Err(e) => {
+					eprintln!("Failed to load font: {e}");
+					None
+				}
+			}
+		}
+		rust_fontconfig::FontSource::Memory(_font) => {
+			unimplemented!("Loading fonts from memory is not supported")
+		}
+	}
+}
+
 fn main() {
 	let mut w = RenderWindow::new(
 		VideoMode::desktop_mode(),
@@ -65,6 +104,8 @@ fn main() {
 	let mut message = String::new();
 	let mut messages: Vec<String> = Vec::new();
 
+	let font = load_font().expect("Unable to load font");
+
 	'event_loop: loop {
 		// Procces all pending events
 		while let Some(event) = w.poll_event() {
@@ -84,6 +125,10 @@ fn main() {
 		}
 
 		w.clear(Color::rgb(1, 1, 1));
+
+		let mut t = Text::new("Hello, World!", &font, 32);
+		t.set_position((500.0, 200.0));
+		w.draw_text(&t, &RenderStates::DEFAULT);
 
 		circles
 			.iter()
