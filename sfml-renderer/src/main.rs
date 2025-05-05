@@ -1,4 +1,5 @@
 use egui::TextBuffer;
+use log::{debug, error, info};
 use rust_fontconfig::{FcFontCache, FcPattern, PatternMatch};
 use sfml::{
 	cpp::FBox,
@@ -50,22 +51,22 @@ fn load_font() -> Option<FBox<Font>> {
 		&mut Vec::new(),
 	);
 
-	println!("Found {} monospace fonts:", fonts.len());
+	info!("Found {} monospace fonts", fonts.len());
 	let font_name = cache.get_metadata_by_id(&fonts.first()?.id)?.name.clone();
-	println!("{:?}", font_name);
+	info!("Picking font {:?}", font_name);
 
 	let font_src = cache.get_font_by_id(&fonts.first()?.id)?;
 
 	match font_src {
 		rust_fontconfig::FontSource::Disk(path) => {
-			println!(
+			info!(
 				"Loading font from: {} @ index: {}",
 				path.path, path.font_index
 			);
 			match sfml::graphics::Font::from_file(&path.path) {
 				Ok(f) => Some(f),
 				Err(e) => {
-					eprintln!("Failed to load font: {e}");
+					error!("Failed to load font: {e}");
 					None
 				}
 			}
@@ -77,6 +78,8 @@ fn load_font() -> Option<FBox<Font>> {
 }
 
 fn main() {
+	env_logger::init();
+
 	let mut w = RenderWindow::new(
 		VideoMode::desktop_mode(),
 		"Ossiloscope",
@@ -119,7 +122,7 @@ fn main() {
 						View::from_rect(Rect::new(0.0, 0.0, width as f32, height as f32)).unwrap();
 					w.set_view(&v)
 				}
-				e => println!("Event: {e:?}"),
+				e => debug!("Event: {e:?}"),
 			}
 			sf_ui.add_event(&event);
 		}
