@@ -1,3 +1,3 @@
 #!/bin/bash
 
-cargo run --bin sfml-renderer
+RUST_LOG=info cargo run --bin sfml-renderer
