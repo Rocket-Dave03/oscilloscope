@@ -80,6 +80,8 @@ fn load_font() -> Option<FBox<Font>> {
 fn main() {
 	env_logger::init();
 
+	let font = load_font().expect("Unable to load font");
+
 	let mut w = RenderWindow::new(
 		VideoMode::desktop_mode(),
 		"Ossiloscope",
@@ -106,8 +108,6 @@ fn main() {
 
 	let mut message = String::new();
 	let mut messages: Vec<String> = Vec::new();
-
-	let font = load_font().expect("Unable to load font");
 
 	'event_loop: loop {
 		// Procces all pending events
