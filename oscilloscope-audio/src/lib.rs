@@ -1,14 +1,17 @@
-pub fn add(left: u64, right: u64) -> u64 {
-	left + right
-}
+use std::sync::mpsc::{Receiver, SyncSender};
 
-#[cfg(test)]
-mod tests {
-	use super::*;
+use log::info;
+use msg::AudioMsg;
 
-	#[test]
-	fn it_works() {
-		let result = add(2, 2);
-		assert_eq!(result, 4);
+pub mod msg;
+
+pub fn thread_start(tx: SyncSender<AudioMsg>, rx: Receiver<AudioMsg>) {
+	loop {
+		match rx.recv().expect("main thread channel closed early") {
+			AudioMsg::Shutdown => {
+				info!("Audio thread shutting down.");
+				break;
+			}
+		}
 	}
 }

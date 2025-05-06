@@ -1,5 +1,8 @@
+use std::sync::mpsc::{Receiver, SyncSender};
+
 use egui::TextBuffer;
 use log::{debug, error, info};
+use oscilloscope_audio::msg::AudioMsg;
 use rust_fontconfig::{FcFontCache, FcPattern, PatternMatch};
 use sfml::{
 	cpp::FBox,
@@ -80,6 +83,14 @@ fn load_font() -> Option<FBox<Font>> {
 fn main() {
 	env_logger::init();
 
+	let (local_tx, audio_rx): (SyncSender<AudioMsg>, Receiver<AudioMsg>) =
+		std::sync::mpsc::sync_channel(8); // Outgoing
+	let (audio_tx, local_rx): (SyncSender<AudioMsg>, Receiver<AudioMsg>) =
+		std::sync::mpsc::sync_channel(32); // Incoming
+	let audio_thread_handle = std::thread::spawn(move || {
+		oscilloscope_audio::thread_start(audio_tx, audio_rx);
+	});
+
 	let font = load_font().expect("Unable to load font");
 
 	let mut w = RenderWindow::new(
@@ -140,5 +151,17 @@ fn main() {
 		draw_ui(&mut sf_ui, &mut w, &mut message, &mut messages);
 
 		w.display();
+	}
+
+	{
+		info!("Requesting audio thread shutdown");
+		match local_tx.send(AudioMsg::Shutdown) {
+			Ok(()) => info!("Shutdown request sent"),
+			Err(e) => info!("Audio thread channel disconnected already: {e}"),
+		};
+		if let Err(e) = audio_thread_handle.join() {
+			error!("Audio thread panicked with: {e:?}")
+		};
+		info!("Audio thread stopped.");
 	}
 }
