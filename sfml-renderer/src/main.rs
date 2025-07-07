@@ -1,4 +1,4 @@
-use std::sync::mpsc::{Receiver, SyncSender};
+use std::sync::mpsc::{Receiver, SyncSender, TryRecvError};
 
 use egui::TextBuffer;
 use log::{debug, error, info};
@@ -120,13 +120,12 @@ fn main() {
 	let mut message = String::new();
 	let mut messages: Vec<String> = Vec::new();
 
-	'event_loop: loop {
+	'render_loop: loop {
 		// Procces all pending events
 		while let Some(event) = w.poll_event() {
 			match event {
 				Event::Closed => {
-					w.close();
-					break 'event_loop;
+					break 'render_loop;
 				}
 				Event::Resized { width, height } => {
 					let v =
@@ -137,7 +136,13 @@ fn main() {
 			}
 			sf_ui.add_event(&event);
 		}
-
+		loop {
+			match local_rx.try_recv() {
+				Ok(msg) => {}
+				Err(TryRecvError::Empty) => break,
+				Err(TryRecvError::Disconnected) => break 'render_loop,
+			}
+		}
 		w.clear(Color::rgb(1, 1, 1));
 
 		let mut t = Text::new("Hello, World!", &font, 32);
@@ -152,6 +157,7 @@ fn main() {
 
 		w.display();
 	}
+	w.close();
 
 	{
 		info!("Requesting audio thread shutdown");
