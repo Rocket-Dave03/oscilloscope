@@ -1,5 +1,6 @@
 use std::sync::mpsc::{Receiver, SyncSender, TryRecvError};
 
+use bezier::{BezierCurve, BezierPoint};
 use egui::TextBuffer;
 use log::{debug, error, info};
 use oscilloscope_audio::msg::AudioMsg;
@@ -7,8 +8,8 @@ use rust_fontconfig::{FcFontCache, FcPattern, PatternMatch};
 use sfml::{
 	cpp::FBox,
 	graphics::{
-		CircleShape, Color, Font, Rect, RenderStates, RenderTarget, RenderWindow, Text,
-		Transformable, View,
+		CircleShape, Color, Font, PrimitiveType, Rect, RenderStates, RenderTarget, RenderWindow,
+		Text, Transformable, Vertex, View,
 	},
 	window::{ContextSettings, Event, Style, VideoMode},
 };
@@ -120,6 +121,13 @@ fn main() {
 	let mut message = String::new();
 	let mut messages: Vec<String> = Vec::new();
 
+	let bezier = {
+		let mut bezier = BezierCurve::new();
+		bezier.add_point(((300.0, 300.0), (400.0, 300.0)).into());
+		bezier.add_point(((400.0, 400.0), (300.0, 400.0)).into());
+		bezier
+	};
+
 	'render_loop: loop {
 		// Procces all pending events
 		while let Some(event) = w.poll_event() {
@@ -149,6 +157,18 @@ fn main() {
 		t.set_position((500.0, 200.0));
 		w.draw_text(&t, &RenderStates::DEFAULT);
 
+		let verts: Vec<Vertex> = bezier
+			.mesh()
+			.take(5)
+			.flat_map(|(a, b)| [a, b])
+			.map(|p| Vertex::with_pos(p.into()))
+			.collect();
+
+		w.draw_primitives(
+			&verts,
+			PrimitiveType::TRIANGLE_STRIP,
+			&RenderStates::DEFAULT,
+		);
 		circles
 			.iter()
 			.for_each(|c| w.draw_circle_shape(c, &RenderStates::DEFAULT));

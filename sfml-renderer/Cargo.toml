@@ -12,3 +12,4 @@ rust-fontconfig = "1.0.1"
 sfml = {version = "0.24.0", default-features = false, features = ["graphics"]}
 
 oscilloscope-audio = {path = "../oscilloscope-audio"}
+bezier = {path = "../bezier"}
