@@ -56,7 +56,7 @@ fn load_font() -> Option<FBox<Font>> {
 
 	info!("Found {} monospace fonts", fonts.len());
 	let font_name = cache.get_metadata_by_id(&fonts.first()?.id)?.name.clone();
-	info!("Picking font {:?}", font_name);
+	info!("Picking font {font_name:?}");
 
 	let font_src = cache.get_font_by_id(&fonts.first()?.id)?;
 
