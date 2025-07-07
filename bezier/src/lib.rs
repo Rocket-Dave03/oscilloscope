@@ -5,6 +5,8 @@ pub struct BezierCurve {
 	points: Vec<BezierPoint>,
 }
 
+//https://en.wikipedia.org/wiki/B%C3%A9zier_curve#:~:text=The%20explicit%20form,contain%20a%20cusp.
+//https://en.wikipedia.org/wiki/B%C3%A9zier_curve#:~:text=the%20derivative%20of%20the%20cubic%20bezier%20curve%20with%20respect%20to%20t%20is%20
 impl BezierCurve {
 	pub fn new() -> Self {
 		Self { points: Vec::new() }
