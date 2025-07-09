@@ -1,11 +1,13 @@
-use std::ops::{Add, Index, IndexMut, Sub};
+use std::{
+	num::FpCategory,
+	ops::{Add, Index, IndexMut, Mul, Sub},
+};
 
 #[derive(Debug, Clone, Default)]
 pub struct BezierCurve {
 	points: Vec<BezierPoint>,
 }
 
-//https://en.wikipedia.org/wiki/B%C3%A9zier_curve#:~:text=The%20explicit%20form,contain%20a%20cusp.
 //https://en.wikipedia.org/wiki/B%C3%A9zier_curve#:~:text=the%20derivative%20of%20the%20cubic%20bezier%20curve%20with%20respect%20to%20t%20is%20
 impl BezierCurve {
 	pub fn new() -> Self {
@@ -30,6 +32,31 @@ impl BezierCurve {
 			idx: 0,
 		}
 	}
+
+	/// Get the point allong the bezier curve for t
+	///
+	pub fn curve(&self, t: f32) -> Option<Point> {
+		match t.classify() {
+			FpCategory::Zero | FpCategory::Normal | FpCategory::Subnormal => {
+				if t.is_sign_negative() {
+					return None;
+				}
+				let segment = t.trunc() as usize;
+				if segment >= self.points.len() - 1 {
+					return None;
+				}
+
+				let s = BezierSegment {
+					point_a: &self.points[segment],
+					point_b: &self.points[segment + 1],
+				};
+
+				let n = t.fract();
+				Some(s.curve(n))
+			}
+			_ => None,
+		}
+	}
 }
 
 impl Index<usize> for BezierCurve {
@@ -45,6 +72,27 @@ impl IndexMut<usize> for BezierCurve {
 	}
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct BezierSegment<'a> {
+	point_a: &'a BezierPoint,
+	point_b: &'a BezierPoint,
+}
+
+impl BezierSegment<'_> {
+	pub fn curve(&self, t: f32) -> Point {
+		let p0 = self.point_a.origin;
+		let p1 = self.point_a.handle_b;
+		let p2 = self.point_b.handle_a;
+		let p3 = self.point_b.origin;
+
+		//https://en.wikipedia.org/wiki/B%C3%A9zier_curve#:~:text=The%20explicit%20form,contain%20a%20cusp.
+		(1.0 - t).powi(3) * p0
+			+ 3.0 * (1.0 - t).powi(2) * t * p1
+			+ 3.0 * (1.0 - t) * t.powi(2) * p2
+			+ t.powi(3) * p3
+	}
+}
+
 pub struct BezierCurveMesh<'a> {
 	curve: &'a BezierCurve,
 	idx: usize,
@@ -55,13 +103,16 @@ impl Iterator for BezierCurveMesh<'_> {
 	fn next(&mut self) -> Option<Self::Item> {
 		// TODO: Temp Impl repalce with actual code
 
-		let v = Some((
-			(200.0 + (self.idx * 200) as f32, 200.0),
-			(200.0 + (self.idx * 200) as f32, 400.0),
-		));
+		let v = if self.idx >= 16 {
+			return None;
+		} else {
+			let p = self.curve.curve(self.idx as f32 / 16.0).unwrap();
+
+			((p.x, p.y + 10.0), (p.x, p.y - 10.0))
+		};
 		self.idx += 1;
 
-		v
+		Some(v)
 	}
 }
 
@@ -94,6 +145,23 @@ impl Sub for Point {
 			x: self.x - rhs.x,
 			y: self.y - rhs.y,
 		}
+	}
+}
+
+impl Mul<f32> for Point {
+	type Output = Self;
+	fn mul(self, rhs: f32) -> Self::Output {
+		Self {
+			x: self.x * rhs,
+			y: self.y * rhs,
+		}
+	}
+}
+
+impl Mul<Point> for f32 {
+	type Output = Point;
+	fn mul(self, rhs: Point) -> Self::Output {
+		rhs * self
 	}
 }
 

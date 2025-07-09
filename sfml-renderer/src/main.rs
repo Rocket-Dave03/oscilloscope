@@ -1,6 +1,6 @@
 use std::sync::mpsc::{Receiver, SyncSender, TryRecvError};
 
-use bezier::{BezierCurve, BezierPoint};
+use bezier::BezierCurve;
 use egui::TextBuffer;
 use log::{debug, error, info};
 use oscilloscope_audio::msg::AudioMsg;
@@ -123,8 +123,8 @@ fn main() {
 
 	let bezier = {
 		let mut bezier = BezierCurve::new();
-		bezier.add_point(((300.0, 300.0), (400.0, 300.0)).into());
-		bezier.add_point(((400.0, 400.0), (300.0, 400.0)).into());
+		bezier.add_point(((300.0, 300.0), (500.0, 200.0)).into());
+		bezier.add_point(((800.0, 800.0), (600.0, 1000.0)).into());
 		bezier
 	};
 
@@ -159,7 +159,6 @@ fn main() {
 
 		let verts: Vec<Vertex> = bezier
 			.mesh()
-			.take(5)
 			.flat_map(|(a, b)| [a, b])
 			.map(|p| Vertex::with_pos(p.into()))
 			.collect();
