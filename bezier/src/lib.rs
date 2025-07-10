@@ -126,6 +126,32 @@ impl Point {
 	pub fn new(x: f32, y: f32) -> Self {
 		Self { x, y }
 	}
+
+	pub fn len(&self) -> f32 {
+		f32::sqrt(self.x.powi(2) + self.y.powi(2))
+	}
+
+	pub fn norm(&self) -> Self {
+		let l = self.len();
+		Self {
+			x: self.x / l,
+			y: self.y / l,
+		}
+	}
+
+	pub fn rotate_90_clockwise(&self) -> Self {
+		Self {
+			x: self.y,
+			y: -self.x,
+		}
+	}
+
+	pub fn rotate_90_counter_clockwise(&self) -> Self {
+		Self {
+			x: -self.y,
+			y: self.x,
+		}
+	}
 }
 
 impl Add for Point {
