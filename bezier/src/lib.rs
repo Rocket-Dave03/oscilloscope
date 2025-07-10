@@ -8,7 +8,6 @@ pub struct BezierCurve {
 	points: Vec<BezierPoint>,
 }
 
-//https://en.wikipedia.org/wiki/B%C3%A9zier_curve#:~:text=the%20derivative%20of%20the%20cubic%20bezier%20curve%20with%20respect%20to%20t%20is%20
 impl BezierCurve {
 	pub fn new() -> Self {
 		Self { points: Vec::new() }
@@ -57,6 +56,29 @@ impl BezierCurve {
 			_ => None,
 		}
 	}
+
+	pub fn derivative(&self, t: f32) -> Option<Point> {
+		match t.classify() {
+			FpCategory::Zero | FpCategory::Normal | FpCategory::Subnormal => {
+				if t.is_sign_negative() {
+					return None;
+				}
+				let segment = t.trunc() as usize;
+				if segment >= self.points.len() - 1 {
+					return None;
+				}
+
+				let s = BezierSegment {
+					point_a: &self.points[segment],
+					point_b: &self.points[segment + 1],
+				};
+
+				let n = t.fract();
+				Some(s.derivative(n))
+			}
+			_ => None,
+		}
+	}
 }
 
 impl Index<usize> for BezierCurve {
@@ -91,6 +113,18 @@ impl BezierSegment<'_> {
 			+ 3.0 * (1.0 - t) * t.powi(2) * p2
 			+ t.powi(3) * p3
 	}
+
+	pub fn derivative(&self, t: f32) -> Point {
+		let p0 = self.point_a.origin;
+		let p1 = self.point_a.handle_b;
+		let p2 = self.point_b.handle_a;
+		let p3 = self.point_b.origin;
+
+		//https://en.wikipedia.org/wiki/B%C3%A9zier_curve#:~:text=the%20derivative%20of%20the%20cubic%20bezier%20curve%20with%20respect%20to%20t%20is%20
+		3.0 * (1.0 - t).powi(2) * (p1 - p0)
+			+ 6.0 * (1.0 - t) * t * (p2 - p1)
+			+ 3.0 * t.powi(2) * (p3 - p2)
+	}
 }
 
 pub struct BezierCurveMesh<'a> {
@@ -108,7 +142,18 @@ impl Iterator for BezierCurveMesh<'_> {
 		} else {
 			let p = self.curve.curve(self.idx as f32 / 16.0).unwrap();
 
-			((p.x, p.y + 10.0), (p.x, p.y - 10.0))
+			let offset = self
+				.curve
+				.derivative(self.idx as f32 / 16.0)
+				.unwrap()
+				.norm()
+				.rotate_90_clockwise()
+				* 15.0;
+
+			let p_a = p + 1.0 * offset;
+			let p_b = p + -1.0 * offset;
+
+			((p_a.x, p_a.y), (p_b.x, p_b.y))
 		};
 		self.idx += 1;
 
