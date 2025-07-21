@@ -1,10 +1,11 @@
 use std::sync::mpsc::{Receiver, SyncSender, TryRecvError};
 
-use bezier::BezierCurve;
+use bezier::{BezierCurve, BezierPoint, Point};
 use egui::TextBuffer;
 use log::{debug, error, info};
 use oscilloscope_audio::msg::AudioMsg;
 use rust_fontconfig::{FcFontCache, FcPattern, PatternMatch};
+use sfml::window::Key;
 use sfml::{
 	cpp::FBox,
 	graphics::{
@@ -81,6 +82,17 @@ fn load_font() -> Option<FBox<Font>> {
 	}
 }
 
+fn move_point(idx: usize, points: &mut [BezierPoint], m: Point) {
+	let point = match idx {
+		1 => &mut points[0].origin,
+		2 => &mut points[0].handle_b,
+		3 => &mut points[1].handle_a,
+		4 => &mut points[1].origin,
+		_ => panic!("Invalid move index"),
+	};
+	*point = *point + m
+}
+
 fn main() {
 	env_logger::init();
 
@@ -121,13 +133,14 @@ fn main() {
 	let mut message = String::new();
 	let mut messages: Vec<String> = Vec::new();
 
-	let bezier = {
+	let mut bezier = {
 		let mut bezier = BezierCurve::new();
 		bezier.add_point(((300.0, 300.0), (500.0, 200.0)).into());
 		bezier.add_point(((800.0, 800.0), (600.0, 1000.0)).into());
 		bezier
 	};
 
+	let mut current_point = 0;
 	'render_loop: loop {
 		// Procces all pending events
 		while let Some(event) = w.poll_event() {
@@ -140,6 +153,37 @@ fn main() {
 						View::from_rect(Rect::new(0.0, 0.0, width as f32, height as f32)).unwrap();
 					w.set_view(&v)
 				}
+				Event::KeyPressed { code: key, .. } => match key {
+					Key::Num1 => {
+						current_point = 1;
+						debug!("Changed current point to : {}", current_point);
+					}
+					Key::Num2 => {
+						current_point = 2;
+						debug!("Changed current point to : {}", current_point);
+					}
+					Key::Num3 => {
+						current_point = 3;
+						debug!("Changed current point to : {}", current_point);
+					}
+					Key::Num4 => {
+						current_point = 4;
+						debug!("Changed current point to : {}", current_point);
+					}
+					Key::Up => {
+						move_point(current_point, bezier.as_mut_slice(), (0.0, -10.0).into())
+					}
+					Key::Down => {
+						move_point(current_point, bezier.as_mut_slice(), (0.0, 10.0).into())
+					}
+					Key::Left => {
+						move_point(current_point, bezier.as_mut_slice(), (-10.0, 0.0).into())
+					}
+					Key::Right => {
+						move_point(current_point, bezier.as_mut_slice(), (10.0, 0.0).into())
+					}
+					_ => (),
+				},
 				e => debug!("Event: {e:?}"),
 			}
 			sf_ui.add_event(&event);
@@ -163,16 +207,12 @@ fn main() {
 			.map(|p| Vertex::with_pos(p.into()))
 			.collect();
 
-		w.draw_primitives(
-			&verts,
-			PrimitiveType::TRIANGLE_STRIP,
-			&RenderStates::DEFAULT,
-		);
+		w.draw_primitives(&verts, PrimitiveType::LINE_STRIP, &RenderStates::DEFAULT);
 		circles
 			.iter()
 			.for_each(|c| w.draw_circle_shape(c, &RenderStates::DEFAULT));
 
-		draw_ui(&mut sf_ui, &mut w, &mut message, &mut messages);
+		// draw_ui(&mut sf_ui, &mut w, &mut message, &mut messages);
 
 		w.display();
 	}

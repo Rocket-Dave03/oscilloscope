@@ -25,6 +25,14 @@ impl BezierCurve {
 		self.points.get_mut(idx)
 	}
 
+	pub fn as_slice(&self) -> &[BezierPoint] {
+		self.points.as_slice()
+	}
+
+	pub fn as_mut_slice(&mut self) -> &mut [BezierPoint] {
+		self.points.as_mut_slice()
+	}
+
 	pub fn mesh(&self) -> BezierCurveMesh {
 		BezierCurveMesh {
 			curve: self,
@@ -137,14 +145,14 @@ impl Iterator for BezierCurveMesh<'_> {
 	fn next(&mut self) -> Option<Self::Item> {
 		// TODO: Temp Impl repalce with actual code
 
-		let v = if self.idx >= 16 {
+		let v = if self.idx >= 64 {
 			return None;
 		} else {
-			let p = self.curve.curve(self.idx as f32 / 16.0).unwrap();
+			let p = self.curve.curve(self.idx as f32 / 64.0).unwrap();
 
 			let offset = self
 				.curve
-				.derivative(self.idx as f32 / 16.0)
+				.derivative(self.idx as f32 / 64.0)
 				.unwrap()
 				.norm()
 				.rotate_90_clockwise()
@@ -247,9 +255,9 @@ impl From<(f32, f32)> for Point {
 
 #[derive(Debug, Clone, Copy)]
 pub struct BezierPoint {
-	origin: Point,
-	handle_a: Point,
-	handle_b: Point,
+	pub origin: Point,
+	pub handle_a: Point,
+	pub handle_b: Point,
 }
 
 impl From<((f32, f32), (f32, f32))> for BezierPoint {
