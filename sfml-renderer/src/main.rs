@@ -128,6 +128,8 @@ fn main() {
 		.enumerate()
 		.for_each(|(i, c)| c.set_position((50.0 * (i + 1) as f32, 50.0)));
 
+	let mut bez_circles = vec![CircleShape::new(8.0, 16); 4];
+
 	let mut sf_ui = egui_sfml::SfEgui::new(&w);
 
 	let mut message = String::new();
@@ -209,6 +211,19 @@ fn main() {
 
 		w.draw_primitives(&verts, PrimitiveType::LINE_STRIP, &RenderStates::DEFAULT);
 		circles
+			.iter()
+			.for_each(|c| w.draw_circle_shape(c, &RenderStates::DEFAULT));
+
+		bezier
+			.as_slice()
+			.iter()
+			.flat_map(|p| [p.handle_a, p.origin, p.handle_b])
+			.skip(1)
+			.take(4)
+			.zip(bez_circles.iter_mut())
+			.for_each(|(p, c)| c.set_position(Into::<(f32,f32)>::into(p)));
+
+		bez_circles
 			.iter()
 			.for_each(|c| w.draw_circle_shape(c, &RenderStates::DEFAULT));
 

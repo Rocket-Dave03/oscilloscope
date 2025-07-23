@@ -253,6 +253,12 @@ impl From<(f32, f32)> for Point {
 	}
 }
 
+impl From<Point> for (f32, f32) {
+    fn from(value: Point) -> Self {
+        (value.x, value.y)
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct BezierPoint {
 	pub origin: Point,
